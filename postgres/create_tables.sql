@@ -43,16 +43,24 @@ GROUP BY co.title;
 CREATE VIEW fastest_slowest_user AS
 WITH cte AS (
     SELECT ce.user_id,ce.course_id, EXTRACT(EPOCH FROM(ce.completed_date - ce.start_date))/(60*60) as spent_time,
-        RANK() OVER (ORDER BY EXTRACT(EPOCH FROM(ce.completed_date - ce.start_date))/(60*60)) fastest,
-        RANK() OVER (ORDER BY EXTRACT(EPOCH FROM(ce.completed_date - ce.start_date))/(60*60) DESC) slowest
+        RANK() OVER (PARTITION BY ce.course_id ORDER BY EXTRACT(EPOCH FROM(ce.completed_date - ce.start_date))/(60*60)) fastest,
+        RANK() OVER (PARTITION BY ce.course_id ORDER BY EXTRACT(EPOCH FROM(ce.completed_date - ce.start_date))/(60*60) DESC) slowest
     FROM dwf_certificates ce
 )
-SELECT CONCAT(us.first_name,' ',us.last_name)as user_name, cte.spent_time
+SELECT co.title,CONCAT(us.first_name,' ',us.last_name)as user_name, cte.spent_time,
+CASE 
+WHEN cte.fastest = 1
+THEN'fastest'
+WHEN cte.slowest = 1
+THEN'slowest'
+end situation
 FROM cte
 INNER JOIN dwd_users us
 ON cte.user_id= us.user_id
+INNER JOIN dwd_courses co
+ON cte.course_id= co.course_id
 WHERE cte.fastest = 1 OR cte.slowest = 1
-ORDER BY spent_time;
+ORDER BY co.title;
 
 --amount of certificates per customer
 CREATE VIEW amount_cert_per_cust AS
