@@ -3,6 +3,7 @@ import logging
 import os
 import psycopg2
 import psycopg2.extras
+from dotenv import dotenv_values
 
 
 def extract(file_to_process) :
@@ -48,13 +49,15 @@ def load(table_name,df_transformed_data):
     try:
         # read the connection parameters & establishing the connection
         # hostname: name of the other container!
-        
+        CONFIG = dotenv_values(".env")
+        if not CONFIG:
+            CONFIG = os.environ
         conn = psycopg2.connect(
-            database= os.getenv('POSTGRES_DB'), 
-            user=os.getenv('POSTGRES_USER'), 
-            password=os.getenv('POSTGRES_PASSWORD'), 
-            host=os.getenv('POSTGRES_HOST'),  
-            port=os.getenv('POSTGRES_PORT')
+            database=CONFIG["POSTGRES_DB"], 
+            user=CONFIG["POSTGRES_USER"], 
+            password=CONFIG["POSTGRES_PASSWORD"], 
+            host=CONFIG["POSTGRES_HOST"],  
+            port=CONFIG["POSTGRES_PORT"]
              )
 
         #Creating a cursor object using the cursor() method
@@ -79,11 +82,13 @@ def load(table_name,df_transformed_data):
         if conn is not None:
             conn.commit()
             conn.close()
-
-if __name__ == '__main__':
+def etl_main():
     for file_name in  os.listdir("./data/"):
         df_extracted_data = extract(file_name)
         table_name,df_transformed_data = transform(file_name,df_extracted_data)
         load(table_name,df_transformed_data)
         df_extracted_data.iloc[0:0] # clean dataframes
         df_transformed_data.iloc[0:0] # clean dataframes
+
+if __name__ == '__main__':
+    etl_main()
