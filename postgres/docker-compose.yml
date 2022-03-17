@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  postgres_main:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    restart: "always"
+    environment:
+    - POSTGRES_DB=certificate
+    - POSTGRES_USER=postgres
+    - POSTGRES_PASSWORD=1234
+    volumes:
+      - ./postgres_maindb:/usr/src/db
+    networks:
+      - etl_network
+    ports:
+    - 5432:5432 # host port: container port
+
+volumes:
+  postgres_maindb: null
+
+networks:
+  etl_network:
+    driver: bridge
+  
